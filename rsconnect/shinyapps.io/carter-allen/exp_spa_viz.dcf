@@ -1,0 +1,12 @@
+name: exp_spa_viz
+title: exp_spa_viz
+username:
+account: carter-allen
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 2741904
+bundleId: 3641126
+url: https://carter-allen.shinyapps.io/exp_spa_viz/
+when: 1600370711.57174
+asMultiple: FALSE
+asStatic: FALSE
