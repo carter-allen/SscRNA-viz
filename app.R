@@ -15,19 +15,17 @@ library(tidygraph)
 library(ggraph)
 library(scran)
 
-load("D_exp_z.RData")
-load("D_spa_z.RData")
 load("X1_z.RData")
 load("X2_z.RData")
 load("top10_var_counts.RData")
-load("centroids.RData")
+load("z_true.RData")
 var_genes <- colnames(var_counts)
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
 
     # Application title
-    titlePanel("Mouse Cortex scRNA-seq + Spatial Vizualization"),
+    titlePanel("scRNA-seq + Spatial Vizualization"),
 
     # Sidebar with a slider input for number of bins 
     sidebarLayout(
@@ -49,8 +47,8 @@ ui <- fluidPage(
             numericInput("knn",
                          "Number of nearest neighbors",
                          min = 3,
-                         max = floor(sqrt(nrow(D1))),
-                         value = floor((sqrt(nrow(D1)) + 3)/2))
+                         max = floor(sqrt(nrow(X1_z))),
+                         value = floor((sqrt(nrow(X1_z)) + 3)/2))
         ),
 
         # Show a plot of the generated distribution
@@ -68,37 +66,40 @@ server <- function(input, output) {
     output$distPlot <- renderPlot({
         
         w = input$w
-        D = (1-w)*D1 + w*D2
+        X = (1-w)*X1_z + w*X2_z
+        D = as.matrix(dist(X))
         G <- buildKNNGraph(D, k = input$knn)
-        XY <- (1-w)*X1_z + (w)*X2_z
-        
+
+        X = as.data.frame(X)
         ingene = input$gene
         incounts = var_counts[,ingene]
         
         fit_l <- cluster_louvain(G)
         clusts_l <- as.factor(fit_l$membership)
-        g <- G %>%
-            as_tbl_graph() %>%
-            activate(nodes) %>%
-            mutate(count = incounts,
-                   clust = clusts_l)
-        XY_df <- as.data.frame(XY)
-        XY_df$clust <- clusts_l
-        XY_df$count <- incounts
-        colnames(XY_df) <- c("X","Y","clust","count")
+        save(clusts_l,file = "clusts_l.RData")
+
+        X$clust <- clusts_l
+        X$count <- incounts
+        colnames(X) <- c("X","Y","clust","count")
         if(input$feature == "Cell Clusters")
         {
-            p <- ggraph(g,layout = "kk") + 
-                geom_node_point(aes(color = clust)) +
-                ggtitle("Blended cell distances") + 
-                theme(legend.position = "none")   
+            p <- ggplot(X,aes(x = X, y = Y, color = clust)) + 
+                geom_point() +
+                xlab(NULL) + ylab(NULL) +
+                theme(axis.text = element_blank(),
+                      axis.ticks = element_blank(),
+                      panel.grid.major = element_blank(), 
+                      panel.grid.minor = element_blank())
         }
         if(input$feature == "Variable Genes")
         {
-            p <- ggraph(g,layout = "kk") + 
-                geom_node_point(aes(color = count)) +
-                ggtitle("Blended cell distances") + 
-                theme(legend.position = "none") 
+            p <- ggplot(X,aes(x = X, y = Y, color = count)) + 
+                geom_point() +
+                xlab(NULL) + ylab(NULL) +
+                theme(axis.text = element_blank(),
+                      axis.ticks = element_blank(),
+                      panel.grid.major = element_blank(), 
+                      panel.grid.minor = element_blank())
         }
         
         pg <- ggplot_build(p)
@@ -108,13 +109,15 @@ server <- function(input, output) {
     })
     
     output$spatPlot <- renderPlot({
+        X2_df <- as.data.frame(X2_z)
+        colnames(X2_df) <- c("X","Y")
         xs <- c(input$brush_pts$xmin,input$brush_pts$xmax)
         ys <- c(input$brush_pts$ymin,input$brush_pts$ymax)
         load("coords.RData")
         inds_sel <- coords$x > xs[1] & coords$x < xs[2] & coords$y > ys[1] & coords$y < ys[2]
-        cents_sel <- centroids[inds_sel,]
+        cents_sel <- X2_df[inds_sel,]
         ggplot() + 
-            geom_point(data = centroids, aes(x = X, y = Y), alpha = 0.1) +
+            geom_point(data = X2_df, aes(x = X, y = Y), alpha = 0.1) +
             geom_point(data = cents_sel, aes(x = X, y = Y)) +
             ggtitle("Selected cell locations") +
             xlab(NULL) + ylab(NULL) +
@@ -123,6 +126,7 @@ server <- function(input, output) {
                   panel.grid.major = element_blank(), 
                   panel.grid.minor = element_blank())
     })
+    
 }
 
 # Run the application 

@@ -5,8 +5,9 @@ account: carter-allen
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 2741904
-bundleId: 3641126
+bundleId: 3650386
 url: https://carter-allen.shinyapps.io/exp_spa_viz/
-when: 1600370711.57174
+when: 1600652289.47259
 asMultiple: FALSE
 asStatic: FALSE
+ignoredFiles: centroids.RData|coords.RData|D_exp_z.RData|D_exp.RData|D_spa_z.RData|D_spa.RData|D1_exp_z.RData|D2_spa_z.RData
